@@ -7,11 +7,11 @@ A macOS app to display your next meeting item in the MacOS toolbar.
 
 Features:
 
-- Authenticate using Google Calendar
-- Displays your next meeting in the MacOS Toolbar
-- Sends a push notification with the Google Meet link 2 minutes before the start of the meeting
-- Display your upcoming 10 meetings
-- Quickly navigate to agenda items and your agenda
+- Authenticate using Google Calendar.
+- Displays your next meeting in the MacOS Toolbar.
+- Sends a push notification with the Google Meet link 2 minutes before the start of the meeting.
+- Display your upcoming 10 meetings.
+- Quickly navigate to agenda items and your agenda.
 
 Dependencies:
 
@@ -20,6 +20,18 @@ Dependencies:
 - google-auth-httplib2
 - google-auth-oauthlib
 - python-dateutil
+
+TO-DO
+-----
+
+- Add a scheduler that will reload the data every 15 minutes. 
+- Add the functionality to decline/accept upcoming meeting. 
+- Add an option to easily add your own credentials.json.
+- Support more join links like:
+    - Microsoft Teams
+    - Zoom
+- Add a button to view the description of an invite.
+- Add a blink option if the meeting has started but you didn't click the notification.
 
 Development
 -----------
