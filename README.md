@@ -24,7 +24,6 @@ Dependencies:
 TO-DO
 -----
 
-- Add a scheduler that will reload the data every 15 minutes. 
 - Add the functionality to decline/accept upcoming meeting. 
 - Add an option to easily add your own credentials.json.
 - Support more join links like:
