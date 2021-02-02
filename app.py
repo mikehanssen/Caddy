@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
+import multiprocessing
 import os
 import sys
 import json
 import datetime
 import webbrowser
 from time import sleep
-from threading import Thread
 from os.path import expanduser
 from typing import Optional, List, Any, Dict
 
@@ -16,6 +16,7 @@ from google.oauth2.credentials import Credentials
 
 from gcal import auth
 from gcal import calendar
+from utils.timer import Delay, Repeater
 
 HOME_PATH = expanduser('~')
 BASE_PATH = os.path.join(HOME_PATH, 'Library/Caddy')
@@ -46,31 +47,42 @@ def _token_path() -> str:
 
 
 class Notification:
+    _timer = None  # type: Delay
+
+    @staticmethod
+    def notify(title: str, subtitle: str, message: str,
+               action_button: Optional[str] = None,
+               data: Optional[Dict[str, any]] = None) -> None:
+        """
+        Trigger a rumps notification.
+        """
+        rumps.notification(
+            title=title, subtitle=subtitle, message=message, data=data,
+            action_button=action_button, icon='static/icon.png')
+
     @classmethod
-    def run(cls, countdown: int, title: str, subtitle: str, message: str,
-            action_button: Optional[str] = None,
-            data: Optional[Dict[str, any]] = None):
+    def run(cls, countdown: int, *args, **kwargs) -> 'Notification':
         """
         Trigger an timer that will countdown until the meeting almost starts and
         will than notify you with a simple Google Meet join link.
         """
+        notification = cls()
+        notification._timer = \
+            Delay(countdown, notification.notify, *args, **kwargs)
+        return notification
 
-        def timer():
-            for i in range(countdown):
-                sleep(1)
-            rumps.notification(
-                title=title, subtitle=subtitle, message=message, data=data,
-                action_button=action_button, icon='static/icon.png')
-            sys.exit()
-
-        t1 = Thread(target=timer)
-        t1.start()
+    def stop(self) -> None:
+        """
+        Stop the timer so the notification never occurs.
+        """
+        self._timer.stop()
 
 
 class Caddy(rumps.App):
     _authenticated = False  # type: bool
     _credentials = None  # type: Credentials
     _events = None  # type: Optional[List[Dict[Any, Any]]]
+    _notification = None  # type: Notification
 
     serializer = json
 
@@ -87,7 +99,17 @@ class Caddy(rumps.App):
         self.icon = 'static/icon.png'
 
         _create_app_dir()
+        self._start_timer()
         self._refresh()
+
+    def _start_timer(self) -> None:
+        """
+        We start the timer to reload every 5 minutes, this utilises a threaded
+        timer so the counting is non blocking but the refresh occurs in the main
+        thread.
+        :return:
+        """
+        Repeater(300, self._refresh)
 
     def _refresh(self):
         """
@@ -96,7 +118,6 @@ class Caddy(rumps.App):
         """
         self.menu.clear()
         self._events = []
-        self.title = None
 
         self.credentials = auth.get_creds(_token_path())
         self._authenticated = self.credentials is not None
@@ -114,13 +135,18 @@ class Caddy(rumps.App):
         calculating the amount of seconds between now and the meeting.
 
         We give the notification 120 seconds before the start of the meeting.
+        Make sure we stop the previous notification so we don't flood the user
+        with notifications.
         """
         if self._events is not None and len(self._events) > 0:
             start = parse(self._events[0]['start']['dateTime'])
             now = datetime.datetime.now().astimezone()
             self.title = \
                 f'{start.strftime("%a %H:%M")} - {self._events[0]["summary"]}'
-            Notification.run(
+
+            if self._notification is not None:
+                self._notification.stop()
+            self._notification = Notification.run(
                 countdown=(start - now).seconds - 120,
                 title='Meeting starting soon',
                 data=self._events[0],
@@ -182,6 +208,7 @@ class Caddy(rumps.App):
         Remove the stored config file.
         """
         os.remove(_token_path())
+        self.title = None
         self._refresh()
 
     def configure_google(self, _) -> None:
