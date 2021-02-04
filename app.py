@@ -184,9 +184,14 @@ class Caddy(rumps.App):
         Generate a menu item for an event. The callback will navigate the user
         to the agenda item in the browser.
         """
-        start = parse(event['start']['dateTime'])
+        event_date = ''
+        if 'dateTime' in event['start']:
+            start = parse(event['start']['dateTime'])
+            event_date = start.strftime("%m-%d %H:%M")
+        elif 'date' in event['start']:
+            event_date = event['start']['date']
         return MenuItem(
-            f'{start.strftime("%m-%d %H:%M")} - {event["summary"]}',
+            f'{event_date} - {event["summary"]}',
             callback=lambda _: webbrowser.open(event['htmlLink']))
 
     def _create_event_items(self):
