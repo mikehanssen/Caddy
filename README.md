@@ -32,7 +32,6 @@ TO-DO
 - Add a button to view the description of an invite.
 - Add a blink option if the meeting has started but you didn't click the notification.
 - Configure notification timer minutes. 
-- Make sure the next meeting shows up 10 minutes after the first meeting. 
 
 Development
 -----------
