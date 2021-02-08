@@ -128,6 +128,19 @@ class Caddy(rumps.App):
         self._refresh_menu()
         self._refresh_title()
 
+    @staticmethod
+    def _select_event(events: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Select the first upcoming event that has a start time and is has not
+        started 15 minutes ago.
+        """
+        for event in events:
+            if 'dateTime' in event['start']:
+                start = parse(event['start']['dateTime'])
+                now = datetime.datetime.now().astimezone()
+                if (start - now).seconds / 60 / 60 <= 10:
+                    return event
+
     def _refresh_title(self):
         """
         If we have events we modify the title of the menu item to display the
@@ -139,20 +152,21 @@ class Caddy(rumps.App):
         with notifications.
         """
         if self._events is not None and len(self._events) > 0:
-            start = parse(self._events[0]['start']['dateTime'])
-            now = datetime.datetime.now().astimezone()
-            self.title = \
-                f'{start.strftime("%a %H:%M")} - {self._events[0]["summary"]}'
+            event = self._select_event(self._events)
+            if event is not None:
+                start = parse(event['start']['dateTime'])
+                now = datetime.datetime.now().astimezone()
+                self.title = f'{start.strftime("%a %H:%M")} - {event["summary"]}'
 
-            if self._notification is not None:
-                self._notification.stop()
-            self._notification = Notification.run(
-                countdown=(start - now).seconds - 120,
-                title='Meeting starting soon',
-                data=self._events[0],
-                subtitle=self._events[0]['summary'],
-                message='Click here to join',
-                action_button='Join Meet')
+                if self._notification is not None:
+                    self._notification.stop()
+                self._notification = Notification.run(
+                    countdown=(start - now).seconds - 120,
+                    title='Meeting starting soon',
+                    data=event,
+                    subtitle=event['summary'],
+                    message='Click here to join',
+                    action_button='Join Meet')
 
     def _refresh_menu(self):
         """
