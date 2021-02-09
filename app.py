@@ -138,7 +138,7 @@ class Caddy(rumps.App):
             if 'dateTime' in event['start']:
                 start = parse(event['start']['dateTime'])
                 now = datetime.datetime.now().astimezone()
-                if (start - now).seconds / 60 >= 10:
+                if (now - start).total_seconds() / 60 <= 10:
                     return event
 
     def _refresh_title(self):
